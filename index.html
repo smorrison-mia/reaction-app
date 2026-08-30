@@ -41,7 +41,9 @@
   #stim { display:none; position:fixed; inset:0; background:var(--bg); z-index:10; }
   #stim.active { display:block; }
   #arena { position:absolute; left:0; top:0; width:100%; height:66.7%; display:flex; align-items:center; justify-content:center; }
-  #arrow { font-size:min(62vw,44vh); line-height:1; color:var(--fg); font-family:-apple-system,BlinkMacSystemFont,sans-serif; font-weight:900; opacity:0; transition:opacity 0.04s; pointer-events:none; }
+  /* No transition: the stimulus must step to full contrast in one frame, not ramp.
+     A fade puts perceived onset somewhere inside the ramp and adds variance to rt_ms. */
+  #arrow { font-size:min(62vw,44vh); line-height:1; color:var(--fg); font-family:-apple-system,BlinkMacSystemFont,sans-serif; font-weight:900; opacity:0; pointer-events:none; }
   #arrow.show { opacity:1; }
   #arrow.nogo { color:var(--nogo); }
   #status { position:absolute; left:0; top:0; width:100%; height:66.7%; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 20px; font-size:38px; font-weight:800; line-height:1.2; pointer-events:none; z-index:5; }
@@ -138,7 +140,7 @@
     <button class="outline-btn" id="demoBtn">Demo rep</button>
   </div>
   <div class="btn-row"><button class="outline-btn" id="endSession" disabled>Session data</button></div>
-  <div class="tiny" id="deviceLine">Checking display timing…</div>
+  <div class="tiny" id="deviceLine">Display timing is checked after your first rep.</div>
 </div>
 
 <!-- ===== STIM ===== -->
@@ -348,7 +350,7 @@
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     $("stim").classList.remove("active");
     $("falseStart").classList.remove("active");
-    if (id === "stim") $("stim").classList.add("active"); else { $(id).classList.add("active"); idle(() => timingCheck()); }
+    if (id === "stim") $("stim").classList.add("active"); else $(id).classList.add("active");
   }
 
   // ---------- trial engine ----------
@@ -496,6 +498,9 @@
     $("repTap").textContent = total - rt;
     $("repTotal").textContent = total;
     showScreen("rep");
+    // Timing check runs here, not at boot: the page has settled and no rep is pending,
+    // so raf_hz reflects the device rather than page-load contention.
+    if (!timingDone) setTimeout(() => idle(() => timingCheck()), 1200);
   }
 
   // ---------- logging ----------
@@ -724,7 +729,6 @@
   flushQueue();
   let seen = null; try { seen = localStorage.getItem(HOWTO_KEY); } catch(e) {}
   if (!seen) $("howto").classList.add("active");
-  idle(() => timingCheck());
 })();
 </script>
 
